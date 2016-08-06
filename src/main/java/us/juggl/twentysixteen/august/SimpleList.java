@@ -1,14 +1,19 @@
 package us.juggl.twentysixteen.august;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static java.lang.Integer.*;
+import static java.nio.charset.Charset.defaultCharset;
 
 /**
  * Created by dphillips on 8/6/16.
@@ -19,6 +24,8 @@ public class SimpleList {
         simpleFilterListExample();
         System.out.println("\n\nParallel Streams Example");
         parallelFilterListExample();
+        System.out.println("\n\nParallel word count example");
+        genesisWordCount();
     }
 
     /**
@@ -70,7 +77,42 @@ public class SimpleList {
         end = Instant.now();
         long parallelRunTime = end.toEpochMilli() - start.toEpochMilli();
         System.out.println(String.format("\tFinished parallel sort in %d milliseconds", parallelRunTime));
-        double pctGain = ((parallelRunTime*1.0)/stdRunTime)*100;
+        double pctGain = 100-(((parallelRunTime*1.0)/stdRunTime)*100);
         System.out.println(String.format("\tParallel sort finished %3.2f percent faster than the standard sort", pctGain));
+    }
+
+    /**
+     * Return the top 5 most frequently used words from the sample text.
+     * @throws Exception
+     */
+    private static void genesisWordCount() throws Exception {
+        long start = Instant.now().toEpochMilli();
+        ConcurrentHashMap<String, LongAdder> wordCounts = new ConcurrentHashMap<>();
+        Path filePath = Paths.get(ClassLoader.getSystemClassLoader().getResource("genesis_page_10.txt").toURI());
+        Files
+            .readAllLines(filePath, defaultCharset())                      // Load all lines from the file
+            .parallelStream()                                              // convert lines to parallel stream
+            .forEach(line -> Arrays                                        // Tokenize each line
+                            .asList(line.split("\\s+"))                    // Convert to a list
+                            .parallelStream()                              // Convert to parallel stream
+                            .filter(w -> w.matches("\\w+"))                // Filter out non-word items
+                            .map(w -> w.toLowerCase())                     // Convert to lower case
+                            .forEach(word -> {                             // Use an AtomicAdder to tally word counts
+                                if (wordCounts.containsKey(word)) {
+                                    wordCounts.get(word).increment();
+                                } else {
+                                    wordCounts.put(word, new LongAdder());
+                                    wordCounts.get(word).increment();
+                                }
+                            }));
+        wordCounts
+                .keySet()
+                .stream()
+                .map(key -> String.format("%-10d %s", wordCounts.get(key).intValue(), key))
+                .sorted((prev, next) -> compare(parseInt(next.split("\\s+")[0]), parseInt(prev.split("\\s+")[0])))
+                .limit(5)
+                .forEach(t -> System.out.println("\t"+t));
+        long end = Instant.now().toEpochMilli();
+        System.out.println(String.format("\tCompleted in %d milliseconds", (end-start)));
     }
 }
