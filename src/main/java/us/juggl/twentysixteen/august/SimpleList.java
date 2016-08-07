@@ -13,19 +13,18 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.Integer.*;
-import static java.nio.charset.Charset.defaultCharset;
 
 /**
  * Created by dphillips on 8/6/16.
  */
 public class SimpleList {
     public static void main(String[] args) throws Exception {
-        System.out.println("\n\nStandard Stream filter example");
-        simpleFilterListExample();
-        System.out.println("\n\nParallel Streams Example");
-        parallelFilterListExample();
-        System.out.println("\n\nParallel word count example");
-        genesisWordCount();
+//        System.out.println("\n\nStandard Stream filter example");
+//        simpleFilterListExample();
+//        System.out.println("\n\nParallel Streams Example");
+//        parallelFilterListExample();
+        System.out.println("\n\nParallel word count example using Old Testement King James bible");
+        textWordCount("kjvdat.txt");
     }
 
     /**
@@ -85,26 +84,23 @@ public class SimpleList {
      * Return the top 5 most frequently used words from the sample text.
      * @throws Exception
      */
-    private static void genesisWordCount() throws Exception {
+    private static void textWordCount(String fileName) throws Exception {
         long start = Instant.now().toEpochMilli();
         ConcurrentHashMap<String, LongAdder> wordCounts = new ConcurrentHashMap<>();
-        Path filePath = Paths.get(ClassLoader.getSystemClassLoader().getResource("genesis_page_10.txt").toURI());
-        Files
-            .readAllLines(filePath, defaultCharset())                      // Load all lines from the file
-            .parallelStream()                                              // convert lines to parallel stream
-            .forEach(line -> Arrays                                        // Tokenize each line
-                            .asList(line.split("\\s+"))                    // Convert to a list
-                            .parallelStream()                              // Convert to parallel stream
-                            .filter(w -> w.matches("\\w+"))                // Filter out non-word items
-                            .map(w -> w.toLowerCase())                     // Convert to lower case
-                            .forEach(word -> {                             // Use an AtomicAdder to tally word counts
-                                if (wordCounts.containsKey(word)) {
-                                    wordCounts.get(word).increment();
-                                } else {
-                                    wordCounts.put(word, new LongAdder());
-                                    wordCounts.get(word).increment();
-                                }
-                            }));
+        System.out.println("\tReading file: "+fileName);
+        Path filePath = Paths.get(fileName);
+        Files.readAllLines(filePath)
+            .stream()                                       // Start streaming the lines
+            .map(line -> line.split("\\s+"))                // Split line into individual words
+            .flatMap(Arrays::stream)                        // Convert stream of String[] to stream of String
+            .parallel()                                     // Convert to parallel stream
+            .filter(w -> w.matches("\\w+"))                 // Filter out non-word items
+            .map(String::toLowerCase)                       // Convert to lower case
+            .forEach(word -> {                              // Use an AtomicAdder to tally word counts
+                if (!wordCounts.containsKey(word))          // If a hashmap entry for the word doesn't exist yet
+                    wordCounts.put(word, new LongAdder());  // Create a new LongAdder
+                wordCounts.get(word).increment();           // Increment the LongAdder for each instance of a word
+            });
         wordCounts
                 .keySet()
                 .stream()
