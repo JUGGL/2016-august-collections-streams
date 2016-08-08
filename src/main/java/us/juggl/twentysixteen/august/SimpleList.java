@@ -90,11 +90,11 @@ public class SimpleList {
         System.out.println("\tReading file: "+fileName);
         Path filePath = Paths.get(fileName);
         Files.readAllLines(filePath)
-            .stream()                                       // Start streaming the lines
+            .parallelStream()                               // Start streaming the lines
             .map(line -> line.split("\\s+"))                // Split line into individual words
             .flatMap(Arrays::stream)                        // Convert stream of String[] to stream of String
             .parallel()                                     // Convert to parallel stream
-            .filter(w -> w.matches("\\w+"))                 // Filter out non-word items
+            .filter(w -> w.matches("\\w{6,}"))              // Filter out non-word items
             .map(String::toLowerCase)                       // Convert to lower case
             .forEach(word -> {                              // Use an AtomicAdder to tally word counts
                 if (!wordCounts.containsKey(word))          // If a hashmap entry for the word doesn't exist yet
