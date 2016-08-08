@@ -36,6 +36,10 @@ public class MultiThreaded {
         launchQueueProcessor();
     }
 
+    /**
+     * Configure and launch a WebSocket client which adds data to concurrent data structures
+     * @throws Exception
+     */
     private static void launchQueueSource() throws Exception {
         AsyncHttpClient client = new DefaultAsyncHttpClient();
         WebSocket ws = client
@@ -65,6 +69,9 @@ public class MultiThreaded {
                         }).build()).get();
     }
 
+    /**
+     * Increment the {@link LongAdder}s stored in a {@link ConcurrentHashMap} for each distinct event
+     */
     private static void launchQueueProcessor() {
         while (1==1) {
             jsonQueue
@@ -78,6 +85,10 @@ public class MultiThreaded {
         }
     }
 
+    /**
+     * Start a scheduled {@link Executor} to poll the {@link ConcurrentHashMap} and show the top 20 RSVPs for recent
+     * MeetUp events.
+     */
     private static void launchQueueViewer() {
         Runnable poller = new Runnable() {
             @Override
