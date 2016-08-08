@@ -32,4 +32,3 @@ crashlytics-build.properties
 fabric.properties
 /.idea/
 /collections-streams.iml
-/runMeetupStreamer.sh
