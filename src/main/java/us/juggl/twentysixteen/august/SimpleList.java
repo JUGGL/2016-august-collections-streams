@@ -34,12 +34,19 @@ public class SimpleList {
         // Start with a list of names
         List<String> names = Arrays.asList("John", "Jane", "Adam", "Alexis", "Daniel", "Donna", "Eric", "Evelyn");
 
-        List<String> filteredList = names
+        List<Integer> filteredList = names
                                         .stream()                       // Convert the list to a stream
                                         .filter(n -> n.startsWith("A")) // Use a predicate to filter the list
+                                        .map(n -> n.toUpperCase())
+                                        .map(n -> {
+                                            return n.length();
+                                        })
+                                        .sorted()
+                                        .limit(1)
                                         .collect(Collectors.toList());  // Collect the results back into a new list
 
         filteredList
+                .stream()
                 .forEach(n -> System.out.println("\t"+n));
     }
 
@@ -58,7 +65,7 @@ public class SimpleList {
         System.out.println("\tPress ENTER to begin standard sort");
         System.in.read();
         Instant start = Instant.now();
-        randomStrings
+        List<String> single = randomStrings
                 .stream()
                 .sorted()
                 .collect(Collectors.toList());
@@ -69,7 +76,7 @@ public class SimpleList {
         System.out.println("\tPress ENTER to begin parallel sort");
         System.in.read();
         start = Instant.now();
-        randomStrings
+        List<String> parallel = randomStrings
                 .parallelStream()
                 .sorted()
                 .collect(Collectors.toList());
@@ -78,6 +85,13 @@ public class SimpleList {
         System.out.println(String.format("\tFinished parallel sort in %d milliseconds", parallelRunTime));
         double pctGain = 100-(((parallelRunTime*1.0)/stdRunTime)*100);
         System.out.println(String.format("\tParallel sort finished %3.2f percent faster than the standard sort", pctGain));
+        for (int i=0; i<single.size(); i++) {
+            if (single.get(i)!=parallel.get(i)) {
+                System.out.println("FAILED");
+                break;
+            }
+
+        }
     }
 
     /**
@@ -97,8 +111,7 @@ public class SimpleList {
             .filter(w -> w.matches("\\w{6,}"))              // Filter out non-word items
             .map(String::toLowerCase)                       // Convert to lower case
             .forEach(word -> {                              // Use an AtomicAdder to tally word counts
-                if (!wordCounts.containsKey(word))          // If a hashmap entry for the word doesn't exist yet
-                    wordCounts.put(word, new LongAdder());  // Create a new LongAdder
+                wordCounts.putIfAbsent(word, new LongAdder());  // If a hashmap entry for the word doesn't exist yet create a new LongAdder
                 wordCounts.get(word).increment();           // Increment the LongAdder for each instance of a word
             });
         wordCounts

@@ -43,7 +43,6 @@ public class MultiThreaded {
             System.out.print("\033[H\033[2J");
             System.out.flush();
             launchQueueSource(apiKey);
-            launchQueueProcessor();
         } else {
             int keyLen = apiKey.length();
             LOG.error("The provided API key does not match the required format");
@@ -94,22 +93,6 @@ public class MultiThreaded {
     }
 
     /**
-     * Increment the {@link LongAdder}s stored in a {@link ConcurrentHashMap} for each distinct event
-     */
-    private static void launchQueueProcessor() {
-        while (1==1) {
-            Stream.of((JsonObject[])jsonQueue.toArray())
-                .parallel()
-                .forEach(j -> {
-                    String event = j.getAsJsonObject("event").get("event_name").getAsString();
-                    if (!eventCounts.containsKey(event)) eventCounts.put(event, new LongAdder());
-                    eventCounts.get(event).increment();
-                    jsonQueue.remove(j);
-                });
-        }
-    }
-
-    /**
      * Start a scheduled {@link Executor} to poll the {@link ConcurrentHashMap} and show the top 20 RSVPs for recent
      * MeetUp events.
      */
@@ -146,7 +129,7 @@ public class MultiThreaded {
                                 .parallelStream()
                                 .forEach(j -> {
                                     String event = j.getAsJsonObject("event").get("event_name").getAsString();
-                                    if (!eventCounts.containsKey(event)) eventCounts.put(event, new LongAdder());
+                                    eventCounts.putIfAbsent(event, new LongAdder());
                                     eventCounts.get(event).increment();
                                     jsonQueue.remove(j);
                                 });
